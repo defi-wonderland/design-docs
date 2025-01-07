@@ -25,9 +25,18 @@ Below are references for this project:
 - [Specs PR](https://github.com/ethereum-optimism/specs/pull/465).
 - [Implementation PR](https://github.com/ethereum-optimism/optimism/pull/13144).
 
+
+>🗂️
+> **For more context about the Interop project, refer to the following docs:**
+> 1. [Interop System Diagram](https://www.notion.so/16c8052fcbb24b93ad1a539b5f8db4c1?pvs=21)
+> 2. [Interop PID](https://www.notion.so/16c8052fcbb24b93ad1a539b5f8db4c1?pvs=21)
+> 3. [Interop Audit Request](https://docs.google.com/document/d/1Rcuzbsguh7koT2jFru5ft9T8zAvjBEzbt0zF5LNQQ08/edit?tab=t.0)
+
+</aside>
+
 ## Failure Modes and Recovery Paths
 
-### **Unauthorized access to `unlockETH` function**
+### FM1: Unauthorized access to `unlockETH` function
 
 - **Description:** if an attacker bypasses access controls for `unlockETH`, the deposit and withdrawal invariants can be broken, potentially resulting in the worst-case scenario of draining all ETH liquidity from the `SharedLockbox`.
 - **Risk Assessment:** High
@@ -37,7 +46,7 @@ Below are references for this project:
 - **Detection:** Monitor `ETHUnlocked` events to verify consistency with authorized portal addresses. Set up alerts for suspected unauthorized activity from non-approved addresses.
 - **Recovery Path(s):** Pause the system through `SuperchainConfig` to halt the `SharedLockbox` upon detection of unauthorized access. Liquidity can be restored by depositing ETH directly in the `SharedLockbox`.
 
-### Unauthorized access to the `addDependency` function and `authorizedPortals` mapping
+### FM2: Unauthorized access to the `addDependency` function and `authorizedPortals` mapping
 
 - **Description:** The `addDependency` function is intended to be callable only by the `dependencyManager`. If bypassed, a malicious actor could register arbitrary addresses in the `dependencySet` within `SuperchainConfig`, and the `authorizedPortals` mapping, putting the ETH liquidity at risk.
 - **Risk Assessment:** High
@@ -47,7 +56,7 @@ Below are references for this project:
 - **Detection:** Monitor the `ConfigUpdate` to ensure the correct `dependencyManager` address is set, as this event happens in the `initialize` function of `SuperchainConfig`. Additionally, monitor  `DependencyAdded` events to verify that only expected addresses are registered and executed by the `dependencyManager`.
 - **Recovery Path(s):** Pause the system through `SuperchainConfig` to halt the `SharedLockbox` upon detecting unexpected addresses. As removal functions are unavailable, an upgrade directly over the `SuperchainConfig` and `SharedLockbox` to clear storage slots will be required.
 
-### Mismanagement of `addDependency` function
+### FM3: Mismanagement of `addDependency` function
 
 - **Description:** The `dependencyManager` could accidentally or maliciously add incorrect addresses to the dependency set.
 - **Risk Assessment:** High
@@ -57,7 +66,7 @@ Below are references for this project:
 - **Detection:** Monitor `DependencyAdded` events for unauthorized or erroneous additions.
 - **Recovery Path(s):** Pause the system through `SuperchainConfig` to halt the `SharedLockbox` upon detecting unexpected addresses. As removal functions are unavailable, an upgrade directly over the `SuperchainConfig` and `SharedLockbox` to clear storage slots will be required.
 
-### Re-Entrancy Attacks on `finalizeWithdrawalTransaction` and `unlockETH` functions
+### FM4: Re-Entrancy Attacks on `finalizeWithdrawalTransaction` and `unlockETH` functions
 
 - **Description:** A reentrancy vulnerability in `unlockETH` could allow an attacker to repeatedly call the function before the state is updated, extracting more liquidity than allowed.
 - **Risk Assessment:** High.
@@ -67,7 +76,7 @@ Below are references for this project:
 - **Detection:** Implement scripts that monitor `unlockETH` and `finalizeWithdrawalTransaction` functions. A function called multiple times over any of both in the same transaction that breaks balance invariants should raise an alert.
 - **Recovery Path(s):** Pause the system through SuperchainConfig to halt the `SharedLockbox`.
 
-### Adding a chain from another cluster in `addDependency`
+### FM5: Adding a chain from another cluster in `addDependency`
 
 - **Description:** Adding a chain that belongs to another cluster can cause liquidity issues in the `SharedLockbox`, as ETH will remain in the old `SharedLockbox`. This could lead to withdrawal failures in the new one.
 - **Risk Assessment:** High.
@@ -79,7 +88,7 @@ Below are references for this project:
 - **Detection:** Monitor `DependencyAdded` events for unauthorized or erroneous additions.  Implement security measures to ensure that chains added do not belong to a previously shared cluster.
 - **Recovery Path(s):** Pause the system through `SuperchainConfig` to halt the `SharedLockbox` upon detecting unexpected addresses. As removal functions are unavailable, an upgrade directly over the `SuperchainConfig` and `SharedLockbox` to clear storage slots will be required.
 
-### Equivocation in batch execution
+### FM6: Equivocation in batch execution
 
 - **Description:** The batch transaction process for migrating a chain to adopt the `SharedLockbox` requires three sequential calls: the first to `SuperchainConfig` and the subsequent two to `ProxyAdmin`. If the transaction is executed incorrectly, the migration may remain incomplete, leading to erratic system behavior due to an unexpected resultant state. While the batched migration process assumes that if one call fails, the entire batch will fail, it does not enforce the inclusion or ordering of the necessary calls to ensure a successful migration. This limitation can result in multiple failure scenarios.
 - **Risk Assessment:** Medium.
@@ -90,23 +99,23 @@ Below are references for this project:
 - **Recovery Path(s):** The recovery approach depends on the specific scenario. The table below outlines possible outcomes and recovery strategies when a batch transaction maintains the expected order but omits certain calls:
     
     
-    | Case N | Step 1: Allow new chain through `addDependency`  | Step 2: Call `upgradeAndCall` from `ProxyAdmin` to upgrade `OptimismPortal` to `LiquidityMigrator` to execute the migration of ETH. | Step 3: Call `upgrade` to update `OptimismPortal` to its final implementation. | Expected result | Recovery path |
+    | Case 6.N | Step 1: Allow new chain through `addDependency`  | Step 2: Call `upgradeAndCall` from `ProxyAdmin` to upgrade `OptimismPortal` to `LiquidityMigrator` to execute the migration of ETH. | Step 3: Call `upgrade` to update `OptimismPortal` to its final implementation. | Expected result | Recovery path |
     | --- | --- | --- | --- | --- | --- |
-    | Case 1 | yes | yes | yes | Migration completed | - |
-    | Case 2 | yes | no | no | ETH deposits will continue to be made into the `OptimismPortal`, but withdrawals may fail if the contract lacks sufficient funds. This issue can also arise in other `OptimismPortal`contracts within the op-interop set, as ETH flow between chains can cause imbalances, leaving some portals underfunded. | Execute a batch tx with the steps 2 and 3. |
-    | Case 3 | no | yes | no | The transaction will revert because the `OptimismPortal` was not allow-listed since `addDependency` was not executed first. | Re-execute the complete batch process. No additional issues are expected. |
-    | Case 4 | no | no | yes | Deposits and withdrawals will fail because `SharedLockbox`does not allow `OptimismPortal` to call `lockETH` and `unlockETH` since it was not authorized. Consequently, the existing ETH will remain stuck in `OptimismPortal`. | Re-execute the complete batch process. |
-    | Case 5 | yes | yes | no | The `OptimismPortal` proxy implementation will remain incorrect (the latest applied implementation would be the `LiquidityMigrator`). As a result, none of the expected functions of the `OptimismPortal` will work. | Re-execute the step 3 only. |
-    | Case 6 | yes |  no | yes | `OptimismPortal` will be able to lock and unlock ETH from the `SharedLockbox`, but it will still store its ETH in the `OptimismPortal`. ETH withdrawals are at risk to fail for any `OptimismPortal` in the cluster because a portion of the expected ETH was not migrated and remains in the latest added chain. | Execute a batch TX with the steps 2 and 3. |
-    | Case 7 | no | yes | yes | Same as Case 3: The transaction will revert because the `OptimismPortal` was not allow-listed since `addDependency` was not executed first. | Re-execute the complete batch process. |
+    | Case 6.1 | yes | yes | yes | Migration completed | - |
+    | Case 6.2 | yes | no | no | ETH deposits will continue to be made into the `OptimismPortal`, but withdrawals may fail if the contract lacks sufficient funds. This issue can also arise in other `OptimismPortal`contracts within the op-interop set, as ETH flow between chains can cause imbalances, leaving some portals underfunded. | Execute a batch tx with the steps 2 and 3. |
+    | Case 6.3 | no | yes | no | The transaction will revert because the `OptimismPortal` was not allow-listed since `addDependency` was not executed first. | Re-execute the complete batch process. No additional issues are expected. |
+    | Case 6.4 | no | no | yes | Deposits and withdrawals will fail because `SharedLockbox`does not allow `OptimismPortal` to call `lockETH` and `unlockETH` since it was not authorized. Consequently, the existing ETH will remain stuck in `OptimismPortal`. | Re-execute the complete batch process. |
+    | Case 6.5 | yes | yes | no | The `OptimismPortal` proxy implementation will remain incorrect (the latest applied implementation would be the `LiquidityMigrator`). As a result, none of the expected functions of the `OptimismPortal` will work. | Re-execute the step 3 only. |
+    | Case 6.6 | yes |  no | yes | `OptimismPortal` will be able to lock and unlock ETH from the `SharedLockbox`, but it will still store its ETH in the `OptimismPortal`. ETH withdrawals are at risk to fail for any `OptimismPortal` in the cluster because a portion of the expected ETH was not migrated and remains in the latest added chain. | Execute a batch TX with the steps 2 and 3. |
+    | Case 6.7 | no | yes | yes | Same as Case 6.3: The transaction will revert because the `OptimismPortal` was not allow-listed since `addDependency` was not executed first. | Re-execute the complete batch process. |
     
     It’s worth noting that the process is designed to revert if the step 2 (`upgradeAndCall`) is executed before the step 1 (`addDependency`). Consequently, only a few additional cases can be described when the order is also altered.
     
-    | Case N | Type | Expected result | Recovery Path |
+    | Case 6.N | Type | Expected result | Recovery Path |
     | --- | --- | --- | --- |
-    | Case 8 | Step 1 → Step 3 → Step 2 | Same as Case 5, the `OptimismPortal` proxy implementation will remain incorrect (the latest applied implementation would be the `LiquidityMigrator`). As a result, none of the expected functions of the `OptimismPortal` will work. | Re-execute the step 3 only. |
-    | Case 9 | Step 3 → Step 1 → Step 2 | ETH will be migrated to the `SharedLockbox`, but the `OptimismPortal` proxy implementation will remain incorrect (the latest applied implementation would be the `LiquidityMigrator`). As a result, none of the expected functions of the `OptimismPortal` will work. | Re-execute the step 3 only. |
-    | Case 10 | Step 3 → Step 1 (Step 2 missed) | Same as Case 6, `OptimismPortal` will be able to lock and unlock ETH from the `SharedLockbox`, but it will still store its ETH in the `OptimismPortal`. ETH withdrawals are at risk to fail for any `OptimismPortal` in the cluster because a portion of the expected ETH was not migrated and remains in the latest added chain. | Execute a batch TX with the steps 2 and 3. |
+    | Case 6.8 | Step 1 → Step 3 → Step 2 | Same as Case 6.5, the `OptimismPortal` proxy implementation will remain incorrect (the latest applied implementation would be the `LiquidityMigrator`). As a result, none of the expected functions of the `OptimismPortal` will work. | Re-execute the step 3 only. |
+    | Case 6.9 | Step 3 → Step 1 → Step 2 | ETH will be migrated to the `SharedLockbox`, but the `OptimismPortal` proxy implementation will remain incorrect (the latest applied implementation would be the `LiquidityMigrator`). As a result, none of the expected functions of the `OptimismPortal` will work. | Re-execute the step 3 only. |
+    | Case 6.10 | Step 3 → Step 1 (Step 2 missed) | Same as Case 6.6, `OptimismPortal` will be able to lock and unlock ETH from the `SharedLockbox`, but it will still store its ETH in the `OptimismPortal`. ETH withdrawals are at risk to fail for any `OptimismPortal` in the cluster because a portion of the expected ETH was not migrated and remains in the latest added chain. | Execute a batch TX with the steps 2 and 3. |
 
 ### Generic items we need to take into account:
 
