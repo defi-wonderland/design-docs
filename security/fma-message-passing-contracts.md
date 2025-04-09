@@ -66,16 +66,12 @@ Below are references for this project:
 ### FM3: Valid message is initiated but never relayed in destination although is safe to include
 
 - **Description:** A user (or contract) may send a valid cross-chain message, but the final relay step—`relayMessage` or `validateMessage`—never occurs (or is dropped before to gain a safe status) even when the initiated message is included in a finalized block on the origin chain.
-- **Risk Assessment:** High.
-  - Potential Impact: Critical. Several scenarios could lead to severe consequences, including:
-    - Inability to `relayETH` in `SuperchainWETH`
-    - Inability to `relayERC20` in `SuperchainTokenBridge` to mint `SuperchainERC20`
-    - Any other contract awaiting a time-sensitive `relayMessage`.
-      If the message is not included within the expiration window, both the message and the underlying action could be considered lost.
+- **Risk Assessment:** Low.
+  - Potential Impact: Low. The message will need to be re-sent, using the `resendMessage` feature.
   - Likelihood: Medium. Block builders/sequencers are generally controlled by a single entity per chain.
 - **Mitigations:** From a smart contract perspective, little can be done except allowing calls to `validateMessage` within a deposit context to improve censorship resistance. This is currently under discussion [here](https://github.com/ethereum-optimism/specs/issues/520).
 - **Detection:** Monitoring tools should track whether every initiated message has been validated at the destination by checking identifiers. Support tickets filed by users reporting the issue sustain the severity of the case in some situations.
-- **Recovery Path(s):** Depends on sequencer/chain governor policy operations.
+- **Recovery Path(s):** Calling `resendMessage` on origin chain to make it available again to be relayed.
 
 ### FM4: Invalid Replayed Message (Replay attack) in `L2ToL2CrossDomainMessenger`
 
