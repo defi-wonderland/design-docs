@@ -63,12 +63,15 @@ Below are references for this project:
 - **Detection:** Monitoring tools should track every validated message to ensure it was observed and validated at the origin chain.
 - **Recovery Path(s):** The chain will eventually resolve the issue as the dependency graph advances, but the resolution could be slow, especially if the sequencer is down or equivocating, or if chains in the dependency graph stop batching. Investigate the causes of such incidents.
 
-### FM3: Valid message is initiated but never relayed in destination although is safe to include
+### FM3: Valid message is initiated but never relayed in destination although it is safe to include
 
 - **Description:** A user (or contract) may send a valid cross-chain message, but the final relay step—`relayMessage` or `validateMessage`—never occurs (or is dropped before to gain a safe status) even when the initiated message is included in a finalized block on the origin chain.
-- **Risk Assessment:** Low.
-  - Potential Impact: Low. The message will need to be re-sent, using the `resendMessage` feature.
-  - Likelihood: Medium. Block builders/sequencers are generally controlled by a single entity per chain.
+- **Risk Assessment:** Medium. Some consequences of this issue are:
+  - Inability to `relayETH` in `SuperchainWETH`
+  - Inability to `relayERC20` in `SuperchainTokenBridge` to mint `SuperchainERC20`
+  - Any other contract awaiting a time-sensitive `relayMessage`.
+- **Potential Impact:** Medium. The message will need to be re-sent, using the `resendMessage` feature. However, if the destination logic is time-sensitive, the message might be lost.
+- **Likelihood:** Medium. Block builders/sequencers are generally controlled by a single entity per chain.
 - **Mitigations:** From a smart contract perspective, little can be done except allowing calls to `validateMessage` within a deposit context to improve censorship resistance. This is currently under discussion [here](https://github.com/ethereum-optimism/specs/issues/520).
 - **Detection:** Monitoring tools should track whether every initiated message has been validated at the destination by checking identifiers. Support tickets filed by users reporting the issue sustain the severity of the case in some situations.
 - **Recovery Path(s):** Calling `resendMessage` on origin chain to make it available again to be relayed.
