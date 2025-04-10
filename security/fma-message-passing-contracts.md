@@ -75,9 +75,9 @@ Below are references for this project:
 
 - **Risk Assessment:** High.
   - Potential Impact: High. If the message failure is not related to a time-sensitive operation but is due to the message being incorrect, it could be considered lost.
-  - Likelihood: Medium. Block builders/sequencers are generally controlled by a single entity per chain. Additionally, if the relay failed on destination due to an incorrect state and after some time it is safe to be relayed again, you can do it even if it expired by calling `resendMessage` on origin chain.
+  - Likelihood: Medium. Block builders/sequencers are generally controlled by a single entity per chain. Additionally, if the relay failed on destination due to an incorrect state and after some time it is safe to be relayed again, you can do it even if it expired by call `resendMessage` on origin chain.
 - **Mitigations:**
-  - If the problem is that themessage is expired, calling `resendMessage` on origin chain to make it available again to be relayed.
+  - If the problem is that the message is expired, calling `resendMessage` on origin chain to make it available again to be relayed.
   - From a smart contract perspective, allowing calls to `validateMessage` within a deposit context to improve censorship resistance. This is currently under discussion [here](https://github.com/ethereum-optimism/specs/issues/520).
 - **Detection:** Monitoring tools should track whether every initiated message has been validated at the destination by checking identifiers. Support tickets filed by users reporting the issue sustain the severity of the case in some situations.
 - **Recovery Path(s):** Depends on sequencer/chain governor policy operations.
