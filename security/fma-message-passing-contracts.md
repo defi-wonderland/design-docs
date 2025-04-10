@@ -66,10 +66,14 @@ Below are references for this project:
 ### FM3: Valid message is initiated but never relayed in destination although it is safe to include
 
 - **Description:** A user (or contract) may send a valid cross-chain message, but the final relay step—`relayMessage` or `validateMessage`—never occurs (or is dropped before to gain a safe status) even when the initiated message is included in a finalized block on the origin chain.
-- **Risk Assessment:** Medium. Some consequences of this issue are:
+
+  Some consequences of this issue are:
+
   - Inability to `relayETH` in `SuperchainWETH`
   - Inability to `relayERC20` in `SuperchainTokenBridge` to mint `SuperchainERC20`
   - Any other contract awaiting a time-sensitive `relayMessage`.
+
+- **Risk Assessment:** Medium.
 - **Potential Impact:** High. If the message failure is not related to a time-sensitive operation but is due to the message being incorrect, it could be considered lost.
 - **Likelihood:** Low. Block builders/sequencers are generally controlled by a single entity per chain. Additionally, if the relay failed on destination due to an incorrect state and after some time it is safe to be relayed again, you can do it even if it expired by calling `resendMessage` on origin chain.
 - **Mitigations:** From a smart contract perspective, little can be done except allowing calls to `validateMessage` within a deposit context to improve censorship resistance. This is currently under discussion [here](https://github.com/ethereum-optimism/specs/issues/520).
