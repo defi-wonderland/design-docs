@@ -99,6 +99,21 @@ contract L2ProxyAdmin is ProxyAdmin {
 
 > Designating the Depositor Account as the owner of the L2ProxyAdmin would allow for the execution of all NUTs by impersonating only a single EOA.
 
+## Example: Upgrading a Predeploy to a new Implementation
+
+In this example, the `NUTExecutor.execute` function's responsibility is to deploy a new implementation contract and initiate the upgrade by invoking the `upgradeTo` method on the Proxy.
+
+```mermaid
+sequenceDiagram
+    NUT Source->>+NUTExecutor: delegateCall(execute())
+    Note over NUTExecutor: NUT execution begins
+    NUTExecutor->>NUTExecutor: Deploy new Implementation
+    NUTExecutor->>+Proxy: upgradeTo(newImplementation)
+    Proxy-->>-NUTExecutor: success
+    Note over NUTExecutor: NUT execution completes
+    NUTExecutor-->>-NUT Source: return result
+```
+
 ## Impact on Developer Experience
 
 Moving away from Go in favor of Solidity to define the NUTs would imply a change in the upgrade release process. Initially, this transition would require updating the Go scripts and creating Solidity NUT definitions. However, the result would be a more cohesive and integrated process for upgrading L2 Predeploys. This approach would also increase confidence in our test suite by ensuring it reflects a more realistic state of the network.
