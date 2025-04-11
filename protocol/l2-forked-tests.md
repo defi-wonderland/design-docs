@@ -82,22 +82,9 @@ Alternatively, we could upgrade the L2 ProxyAdmin contract to permit limited del
 ```solidity
 contract L2ProxyAdmin is ProxyAdmin {
 
-    /// @notice The constructor initializes the ProxyAdmin with the `DEPOSITOR_ACCOUNT` as the owner.
-    constructor() ProxyAdmin(Constants.DEPOSITOR_ACCOUNT) { }
-
-    /// @notice The owner of the L2ProxyAdmin is the `DEPOSITOR_ACCOUNT`.
-    function owner() public pure override returns (address) {
-        return Constants.DEPOSITOR_ACCOUNT;
-    }
-
-    /// @notice The owner of the L2ProxyAdmin cannot be transferred.
-    function transferOwnership(address) public pure override {
-        revert OwnerCannotBeTransferred();
-    }
-
-    /// @notice The owner of the L2ProxyAdmin cannot be renounced.
-    function renounceOwnership() public pure override {
-        revert OwnershipCannotBeRenounced();
+    /// @dev allow Constants.DEPOSITOR_ACCOUNT to perform delegated calls
+    function _checkOwner() internal view override {
+        require(owner() == _msgSender() || Constants.DEPOSITOR_ACCOUNT == _msgSender(), "Ownable: caller is not the owner");
     }
 
 	function performDelegateCall(address _target) external payable onlyOwner {
