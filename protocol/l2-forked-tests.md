@@ -11,8 +11,11 @@ This proposal describes a testing framework for L2 networks that lets us run tes
 ## Problem Statement + Context
 
 As Predeploy contracts development advances, we currently lack an efficient method to run test suites against the state of arbitrary networks. We need to develop a configurable testing framework that accurately replicates the state of Predeploy contracts within selected networks, initialized from a specified block number (initial state).
+
 This framework should be able to take a network's initial state and apply the required Network Upgrade Transactions (NUTs) to reach the latest version of the contracts for running the test suite. This approach would help increase confidence that the upgrade process doesn't introduce unexpected bugs, allowing contributors to catch errors earlier in the release process. While this implementation won't perfectly mirror the environment after NUTs are applied to the real network, it represents a significant improvement to our testing capabilities.
+
 The solution must provide a deterministic state to the test suite, enabling the execution of targeted test cases against this final state. This state results from applying a set of NUTs to the initial forked state. Therefore, we need to implement a structured way to describe these NUTs and a method to apply them.
+
 It's also important that this solution remains loosely coupled with the test setup itself, so that running tests against different chains starting with different initial states requires minimal changes to the Setup test file.
 
 ## Proposed Solution
@@ -92,7 +95,6 @@ contract L2ProxyAdmin is ProxyAdmin {
         require(success, "ProxyAdmin: delegatecall to target failed");
 	}
 }
-
 ```
 
 > Designating the Depositor Account as the owner of the L2ProxyAdmin would allow for the execution of all NUTs by impersonating only a single EOA.
