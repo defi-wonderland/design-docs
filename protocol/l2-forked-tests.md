@@ -90,10 +90,10 @@ contract L2ProxyAdmin is ProxyAdmin {
         require(owner() == _msgSender() || Constants.DEPOSITOR_ACCOUNT == _msgSender(), "Ownable: caller is not the owner");
     }
 
-	function performDelegateCall(address _target) external payable onlyOwner {
+    function performDelegateCall(address _target) external payable onlyOwner {
         (bool success,) = _target.delegatecall(abi.encodeCall(INUTExecutor.execute, ()));
         require(success, "ProxyAdmin: delegatecall to target failed");
-	}
+    }
 }
 ```
 
