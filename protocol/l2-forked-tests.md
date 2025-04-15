@@ -76,7 +76,7 @@ However, current limitations prevent us from implementing a truly shared approac
 
 #### L2 `ProxyAdmin` Upgrade
 
-It's possible to upgrade the L2 `ProxyAdmin` contract to allow limited delegated calls, enabling NUT scripts to execute within the `ProxyAdmin` context and perform contract upgrades. While this change would allow us to deploy new implementations and upgrading the proxies, configuration settings in these new implementations can be managed by verifying `tx.origin` rather than `msg.sender` as the Depositor Account. We consider this approach semantically correct as it still verifies that the Depositor Account is the originator of the transaction.
+It's possible to upgrade the L2 `ProxyAdmin` contract to allow limited delegated calls, enabling NUT scripts to execute within the `ProxyAdmin` context and perform contract upgrades. While this change would allow us to deploy new implementations and upgrade the proxies, configuration settings in these new implementations can be managed by verifying `tx.origin` rather than `msg.sender` as the Depositor Account. We consider this approach semantically correct as it still verifies that the Depositor Account is the originator of the transaction.
 
 ```solidity
 contract L2ProxyAdmin is ProxyAdmin {
