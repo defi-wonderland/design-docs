@@ -72,15 +72,11 @@ This approach offers flexibility and power as the exact same transactions could 
 - Provides high-fidelity representation of Predeploy states by simulating complete upgrade paths from an initial network state
 - Offers flexible configuration options for various testing scenarios
 
-However, current limitations prevent us from implementing a truly shared approach, as we require NUT scripts to execute within the context of privileged accounts such as ProxyAdmin or the Depositor Account. To address this challenge, we would need to implement one of the following solutions:
+However, current limitations prevent us from implementing a truly shared approach, as we require NUT scripts to execute within the context of privileged accounts such as ProxyAdmin or the Depositor Account. To address this, we propose the implementation of the following solution:
 
-#### Pectra Hardfork and EIP-7702
+#### L2 `ProxyAdmin` Upgrade
 
-The Ethereum Pectra Hardfork introduces EIP-7702, which enables EOAs to delegate control to smart contracts capable of executing code directly from the address. This would allow us to integrate the NUT Executor approach into L2 upgrades, as privileged accounts could execute NUT scripts via delegated calls.
-
-#### ProxyAdmin Upgrade
-
-Alternatively, we could upgrade the L2 ProxyAdmin contract to permit limited delegated calls, enabling NUT scripts to execute within the ProxyAdmin context and perform contract upgrades as necessary.
+It's possible to upgrade the L2 `ProxyAdmin` contract to allow limited delegated calls, enabling NUT scripts to execute within the `ProxyAdmin` context and perform contract upgrades. While this change would allow us to deploy new implementations and upgrading the proxies, configuration settings in these new implementations can be managed by verifying `tx.origin` rather than `msg.sender` as the Depositor Account. We consider this approach semantically correct as it still verifies that the Depositor Account is the originator of the transaction.
 
 ```solidity
 contract L2ProxyAdmin is ProxyAdmin {
@@ -97,7 +93,24 @@ contract L2ProxyAdmin is ProxyAdmin {
 }
 ```
 
-> Designating the Depositor Account as the owner of the L2ProxyAdmin would allow for the execution of all NUTs by impersonating only a single EOA.
+```solidity
+contract GasPriceOracle is ISemver {
+    /// ... rest of the code
+
+    /// @notice Set chain to be Isthmus chain (callable by depositor account)
+    function setIsthmus() external {
+        require(
+            tx.origin == Constants.DEPOSITOR_ACCOUNT,
+            "GasPriceOracle: only the depositor account can set isIsthmus flag"
+        );
+        require(isFjord, "GasPriceOracle: Isthmus can only be activated after Fjord");
+        require(isIsthmus == false, "GasPriceOracle: Isthmus already active");
+        isIsthmus = true;
+    }
+}
+```
+
+> Designating the Depositor Account as the owner of the L2ProxyAdmin and checking for `tx.origin` on configuration changes on new implementations would allow for the execution of all NUTs by impersonating only a single EOA
 
 ## Example: Upgrading a Predeploy to a new Implementation
 
@@ -105,20 +118,29 @@ In this example, the `NUTExecutor.execute` function's responsibility is to deplo
 
 ```mermaid
 sequenceDiagram
-    NUT Source->>+NUTExecutor: delegateCall(execute())
+    Depositor ->>+L2ProxyAdmin: performDelegateCall
+    L2ProxyAdmin ->>+NUTExecutor: delegateCall(execute())
     Note over NUTExecutor: NUT execution begins
     NUTExecutor->>NUTExecutor: Deploy new Implementation
     NUTExecutor->>+Proxy: upgradeTo(newImplementation)
     Proxy-->>-NUTExecutor: success
     Note over NUTExecutor: NUT execution completes
-    NUTExecutor-->>-NUT Source: return result
+    NUTExecutor-->>-L2ProxyAdmin: return result
 ```
 
 ## Impact on Developer Experience
 
 Moving away from Go in favor of Solidity to define the NUTs would imply a change in the upgrade release process. Initially, this transition would require updating the Go scripts and creating Solidity NUT definitions. However, the result would be a more cohesive and integrated process for upgrading L2 Predeploys. This approach would also increase confidence in our test suite by ensuring it reflects a more realistic state of the network.
 
-## Alternative Approach
+## Alternative Approaches Explored
+
+#### Pectra Hardfork and EIP-7702
+
+The Ethereum Pectra Hardfork introduces EIP-7702, which enables EOAs to delegate control to smart contracts capable of executing code directly from the address. This would allow us to integrate the NUT Executor approach into L2 upgrades, as privileged accounts could execute NUT scripts via delegated calls.
+
+This alternative was quickly discarded because it is impossible to obtain the required signatures for authorization lists, which would have been necessary to attach the delegated contracts to the Depositor Account.
+
+### NUT parser middleware
 
 Network upgrade transactions are defined in Go scripts following the naming convention <fork_name>\_upgrade_transactions.go (e.g., fjord_upgrade_transactions.go). These scripts are used by the client to send the necessary transactions.
 We could create middleware Go scripts that consume these transactions and return them in a format which can be consumed by Solidity for execution from Foundry tests. The L2ForkLive would call these Go scripts via FFI and parse the response for it to execute each one of the calls.
