@@ -112,6 +112,55 @@ contract GasPriceOracle is ISemver {
 
 > Designating the Depositor Account as the owner of the L2ProxyAdmin and checking for `tx.origin` on configuration changes on new implementations would allow for the execution of all NUTs by impersonating only a single EOA
 
+### Bytecode Library
+
+When constructing NUTs in our executor scripts, they must reference specific versions of each contract they use. We propose implementing a bytecode library to serve as a repository for storing bytecode of Predeploys and periphery contracts employed during upgrades. This ensures NUTs execute with the appropriate contract versions regardless of current development states.
+
+```solidity
+   interface BytecodeProvider {
+       function L1Block() external view returns(bytes memory);
+       // Additional predeploys...
+   }
+
+   contract XForkBytecodeProvider is BytecodeProvider {
+        function L1Block() external view returns(bytes memory) {
+            return hex"608060405234801561001057600080fd5b50...";
+        }
+   }
+```
+
+This offers extended benefits for other development processes, such as the L2Genesis script, which could leverage specific code versions when deploying new chains, enhancing flexibility and testability.
+
+```solidity
+    function runWithOptions(OutputMode _mode, Fork _fork, L1Dependencies memory _l1Dependencies, BytecodeProvider _bytecodeProvider) public {
+        bytes memory _l1BlockCode = _bytecodeProvider.L1Block();
+        // ...rest of the code
+        setL1Block(_l1BlockCode);
+    }
+
+    /// @notice This predeploy is following the safety invariant #1.
+    function setL1Block(bytes memory _code) public {
+        // Note: L1 block attributes are set to 0.
+        // Before the first user-tx the state is overwritten with actual L1 attributes.
+        _setImplementationCode(Predeploys.L1_BLOCK_ATTRIBUTES, _code);
+    }
+
+    /// @notice Sets the bytecode in state
+    function _setImplementationCode(address _addr, bytes memory _code) internal returns (address) {
+        string memory cname = Predeploys.getName(_addr);
+        address impl = Predeploys.predeployToCodeNamespace(_addr);
+        console.log("Setting %s implementation at: %s", cname, impl);
+        if (_code.length > 0) {
+            // Use custom code for this predeploy
+            vm.etch(impl, _code);
+        } else {
+            // Use the default code in repo
+            vm.etch(impl, vm.getDeployedCode(string.concat(cname, ".sol:", cname)));
+        }
+        return impl;
+    }
+```
+
 ## Example: Upgrading a Predeploy to a new Implementation
 
 In this example, the `NUTExecutor.execute` function's responsibility is to deploy a new implementation contract and initiate the upgrade by invoking the `upgradeTo` method on the Proxy.
