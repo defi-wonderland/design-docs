@@ -1,3 +1,13 @@
+# ETH Rate Limits
+
+|                    |                             |
+| ------------------ | --------------------------- |
+| Author             | 0xDiscotech                 |
+| Created at         | 2025-04-16                  |
+| Initial Reviewers  | agusduha, skeletor-spaceman |
+| Need Approval From |                             |
+| Status             | In Review                   |
+
 ## Purpose
 
 This document presents a solution to serve as the final interop safeguard against a potential bug that could lead to infinite ETH minting on L2s.
