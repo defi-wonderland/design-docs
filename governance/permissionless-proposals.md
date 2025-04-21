@@ -1,6 +1,6 @@
 # Purpose
 
-This document outlines the design for enabling permissionless proposals in the Optimism governance system. The goal is to allow top delegates or approved address to submit a proposal on-chain without requiring prior approval or gatekeeping by the manager. Instead, if all automated gating rules are met, the proposal is submitted for voting. 
+This document outlines the design for enabling permissionless proposals in the Optimism governance system. The goal is to allow an approved address or anyone, based on the Proposal Type, to submit a proposal on-chain without requiring prior approval or gatekeeping by the manager. Instead, if all automated gating rules are met, the proposal is submitted for voting. 
 
 # Summary
 
