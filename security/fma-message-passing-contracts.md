@@ -68,18 +68,15 @@ Below are references for this project:
 - **Description:** A user (or contract) may send a valid cross-chain message, but the final relay step—`relayMessage` or `validateMessage`—never occurs. This can happen even if the message is included in a finalized block on the origin chain. In some cases, a sequencer on the destination chain may intentionally choose not to relay the message (e.g., if the origin chain is not trusted or politically unfavorable to the operator).
 
 - **Consequences:**
-
   - Inability to `relayETH` in `SuperchainETHBridge`
   - Inability to `relayERC20` in `SuperchainTokenBridge` to mint `SuperchainERC20`
   - Any other contract awaiting a time-sensitive `relayMessage`.
 
 - **Risk Assessment:** High
-
   - Potential Impact: High. Time-sensitive or critical messages may never be processed.
   - Likelihood: Medium. Block builders/sequencers are generally controlled by a single entity per chain.
 
 - **Mitigations:**
-
   - Use `resendMessage` on the origin chain to re-emit the event and allow re-processing in case the time-window has expired.
   - From a smart contract perspective, allowing calls to `validateMessage` within a deposit context to improve censorship resistance. This is currently under discussion [here](https://github.com/ethereum-optimism/specs/issues/520).
 
