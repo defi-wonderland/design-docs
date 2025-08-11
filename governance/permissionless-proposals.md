@@ -74,6 +74,7 @@ flowchart LR
     F -->|moveToVote| G[ProposalValidator]
     G -->|propose| H[OPGov]
 ```
+6. If a proposal is not approved or fails to reach the required delegate approvals within the configured window, it must be re-submitted in a subsequent voting cycle and re-collect approvals.
 
 Detailed flows for each Proposal Type can be seen [here](https://www.figma.com/board/V0zh1Lg5QqhGfhVrJaIJVu/Permissionless-Proposals-DRAFT?node-id=0-1&p=f&t=sFuVhRioJR1kAIzV-0).
 
