@@ -44,6 +44,8 @@ Each proposal type and their validation steps are detailed in the following tabl
 
 > Proposal types defined in the Operating Manual but not listed above continue under the existing manager-mediated flow and bypass the `ProposalValidator` until the manager explicitly configures them for it.
 
+> Note that a proposal marked as "no state changes" must have an empty actions array. It performs no on-chain calls that write storage or transfer assets (ETH or OP). It is signaling-only.
+
 # The Workflow
 
 The general workflow would be:
