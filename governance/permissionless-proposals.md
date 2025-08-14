@@ -71,6 +71,7 @@ flowchart LR
 - Enabled *Move to Vote*: displayed only when all validations are satisfied, including the required top-100 delegate approvals. Any user can then click to call `moveToVote(...)` on the `ProposalValidator`.
 
 When `moveToVote(...)` is called, the contract revalidates all conditions (required delegate approvals, correct time window, compliance with the distribution rate limit, and proposal-type-specific thresholds). If all are met, it forwards the proposal to the Governor by internally calling `proposeWithModule(...)`. When the proposal is finally submitted to the Governor, the validator also checks that the proposal ID returned matches the expected ID, ensuring the correct proposal is being advanced.
+
 5. **Governor:** The `ProposalValidator` checks that the proposal is approved, it forwards the proposal to the OP Governor contract. Then, the voting time begins as usual.
 
 ```mermaid
