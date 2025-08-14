@@ -62,8 +62,12 @@ flowchart LR
     
 3. **On-chain approvals via Agora**: With the final proposal submitted, the top 100 delegates can start approving the on-chain proposal using the `proposalId` through Agora. Their approvals are recorded via the `approveProposal(...)` function in the `ProposalValidator` contract, that emits a `ProposalApproved` event. Agora will display the real-time signature status for each proposal.
 4.	**Move to Vote via ProposalValidator**: The UI should reflect the available action. This action will be:
-	•	Enabled *Approve Proposal* Button: displayed when the proposal is within the allowed submission window, within the distribution rate limit (if applicable), and any proposal-type-specific thresholds are met, but the required top 100 delegate approvals have not yet been reached.
-	•	Disabled *Approve Proposal* Button: displayed when the proposal does not meet one or more of the requirements mentioned above. In this case, the unmet condition(s) should be shown in the UI.
+	•	Disabled *Approve Proposal* Button: displayed when the proposal does not meet one or more of the requirements:
+        • The proposal is not within the allowed submission window.
+        • It is not within the distribution rate limit (if applicable). 
+        • The proposal-type-specific thresholds are not met.
+        In this case, the unmet condition(s) should be shown in the UI. 
+	•	Enabled *Approve Proposal* Button: displayed when the proposal meets the requirements listed above, but the required top 100 delegate approvals have not yet been reached.
 	•	Enabled *Move to Vote*: displayed only when all validations are satisfied, including the required top-100 delegate approvals. Any user can then click to call `moveToVote(...)` on the `ProposalValidator`.
 
 When `moveToVote(...)` is called, the contract revalidates all conditions (required delegate approvals, correct time window, compliance with the distribution rate limit, and proposal-type-specific thresholds). If all are met, it forwards the proposal to the Governor by internally calling `proposeWithModule(...)`. When the proposal is finally submitted to the Governor, the validator also checks that the proposal ID returned matches the expected ID, ensuring the correct proposal is being advanced.
