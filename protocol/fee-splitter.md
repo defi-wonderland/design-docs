@@ -42,7 +42,7 @@ High‑level flow:
 3. The `FeeSplitter` calls the chain‑configured `SharesCalculator` with:
     - The revenue per vault as input to compute disbursements.
     - Receives data from `SharedCalculator` (amounts and outputs).
-4. Finally, the `FeeSplitter` transfers the respective amount to each recipient and emit `FeesDisbursed`.
+4. Finally, the `FeeSplitter` transfers the respective amount to each recipient and emit `FeesDisbursed`. One possible subsequent flow is for the `L1Withdrawer` to withdraw to the `FeesDepositor`, which automatically triggers a deposit on the `OptimismPortal` on L1.
 
 ```mermaid
 graph LR
