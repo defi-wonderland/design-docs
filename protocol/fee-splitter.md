@@ -44,14 +44,6 @@ High‑level flow:
     - Receives data from `SharedCalculator` (amounts and outputs).
 4. Finally, the `FeeSplitter` transfers the respective amount to each recipient and emit `FeesDisbursed`. One possible subsequent flow is for the `L1Withdrawer` to withdraw to the `FeesDepositor`, which automatically triggers a deposit on the `OptimismPortal` on L1. This subsequent flow is expected when an OP Stack Chain shares its revenue with the Superchain ecosystem.
 
-**Invariants:**
-
-- On misconfigured vaults, `disbursementFees()` MUST revert
-- On `SharesCalculator` returning either a wrong (e.g. sum mismatch) or malformed output, `disburseFees` MUST revert.
-- On a recipient's payout failure, `disburseFees` MUST revert the entire transaction.
-- On no funds, `disburseFees` MUST revert and MUST NOT consume the disbursement interval.
-- When not on a disbursement context, `receive` MUST revert (`FeeVault.withdraw()` MUST revert if not call from the `FeeSplitter` when configured as its recipient).
-
 ## `SuperchainRevShareCalculator`
 
 The `SuperchainRevShareCalculator` will be a `SharesCalculator` following the interface. Any contract that complies with the `ISharesCalculator` interface can be used to calculate the splits. Only the proxy admin owner will be able to set it.
