@@ -35,13 +35,13 @@ The `FeeSplitter` will be a predeploy with a modular config. The `SharesCalculat
 High‑level flow:
 
 1. Anyone can call `FeeSplitter.disburseFees()`. The `FeeSpliter` checks the disbursement interval has elapsed.
-2. For each `FeeVault`, the `FeeSplitter`: 
-    - Verifies vaults configs.
-    - If valid, it calls `withdraw` from vaults (if they reached the min withdrawal amount threshold), pulling the funds.
-    - Computes a per‑vault collected fees for granularity.
+2. For each `FeeVault`, the `FeeSplitter`:
+   - Verifies vaults configs.
+   - If valid, it calls `withdraw` from vaults (if they reached the min withdrawal amount threshold), pulling the funds.
+   - Computes a per‑vault collected fees for granularity.
 3. The `FeeSplitter` calls the chain‑configured `SharesCalculator` with:
-    - The revenue per vault as input to compute disbursements.
-    - Receives data from `SharedCalculator` (amounts and outputs).
+   - The revenue per vault as input to compute disbursements.
+   - Receives data from `SharedCalculator` (amounts and outputs).
 4. Finally, the `FeeSplitter` transfers the respective amount to each recipient and emit `FeesDisbursed`. One possible subsequent flow is for the `L1Withdrawer` to withdraw to the `FeesDepositor`, which automatically triggers a deposit on the `OptimismPortal` on L1. This subsequent flow is expected when an OP Stack Chain shares its revenue with the Superchain ecosystem.
 
 **Invariants:**
@@ -78,6 +78,18 @@ struct SharesRecipient {
 It will split the fees between 2 recipients: `revenueShareRecipient` and `remainderRecipient`.
 
 To calculate the share to send to the `revenueShareRecpient`, it will get the `grossRevenue` (the sum of all vaults revenue) and the `netRevenue` (fees collected only from `SequencerFeeVault`, `OperatorFeeVault`, and `BaseFeeVault`). Then, the amount to transfer to it will be the higher value between 2.5% of the `grossRevenue` and 15% of the `netRevenue` — setting the remaining balance as the amount to transfer to `remainderRecipient`.
+
+## Upgrade Path
+
+Given the optional nature of this system, it's important that chain operators have a clear, easy, and deterministic way to either upgrade to use the `FeeSplitter` from the very beginning or to opt not to use it with the option to easily integrate to the system at a later point.
+
+We make use of the Superchain-Ops tool, which allows defining tasks that are easily repeated and verified. Two new task templates are included:
+
+1. `RevenueShareUpgradePath` which allows all the necessary contracts to be deployed on L2, using OptimismPortal's `depositTransaction` function. The operators can configure the task to suit their needs when opting-in or just performing minimal system deployments if opting out for later use.
+
+2. `LateOptInRevenueShare` this template allows chain operators to start using the fee splitting mechanism in case they initially opted out of it. It's highly configurable and allows them to quickly set up the infrastructure with their own `SharesCalculator` if needed.
+
+With the introduction of these two templates, operators can deploy and configure the contracts in a way that is less prone to errors than executing one transaction at a time for contract deployments and configuration, and has the advantage of not requiring a Network Upgrade Transaction.
 
 ### Resource Usage
 
