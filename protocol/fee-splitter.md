@@ -79,6 +79,18 @@ It will split the fees between 2 recipients: `revenueShareRecipient` and `remain
 
 To calculate the share to send to the `revenueShareRecpient`, it will get the `grossRevenue` (the sum of all vaults revenue) and the `netRevenue` (fees collected only from `SequencerFeeVault`, `OperatorFeeVault`, and `BaseFeeVault`). Then, the amount to transfer to it will be the higher value between 2.5% of the `grossRevenue` and 15% of the `netRevenue` — setting the remaining balance as the amount to transfer to `remainderRecipient`.
 
+## Upgrade Path
+
+Given the optional nature of this system, it's important that chain operators have a clear, easy, and deterministic way to either upgrade to use the `FeeSplitter` from the very beginning or to opt not to use it with the option to easily integrate to the system at a later point.
+
+We make use of the Superchain-Ops tool, which allows defining tasks that are easily repeated and verified. Two new task templates are included:
+
+1. `RevenueShareUpgradePath` which allows all the necessary contracts to be deployed on L2, using OptimismPortal's `depositTransaction` function. The operators can configure the task to suit their needs when opting-in or just performing minimal system deployments if opting out for later use.
+
+2. `LateOptInRevenueShare` this template allows chain operators to start using the fee splitting mechanism in case they initially opted out of it. It's highly configurable and allows them to quickly set up the infrastructure with their own `SharesCalculator` if needed.
+
+With the introduction of these two templates, operators can deploy and configure the contracts in a way that is less prone to errors than executing one transaction at a time for contract deployments and configuration, and has the advantage of not requiring a Network Upgrade Transaction.
+
 ### Resource Usage
 
 - Compared to current “vault → L1 withdrawal” flows, this adds an extra step at disbursement time with the `FeeSplitter` as intermediate, which incurs higher gas consumption.
