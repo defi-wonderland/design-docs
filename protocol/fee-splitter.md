@@ -85,9 +85,17 @@ Given the optional nature of this system, it's important that chain operators ha
 
 We make use of the Superchain-Ops tool, which allows defining tasks that are easily repeated and verified. Two new task templates are included:
 
-1. `RevenueShareUpgradePath` which allows all the necessary contracts to be deployed on L2, using OptimismPortal's `depositTransaction` function. The operators can configure the task to suit their needs when opting-in or just performing minimal system deployments if opting out for later use.
+1. `RevenueShareUpgradePath` template deploys new `FeeVault` implementations and the `FeeSplitter` contract on L2,
+   using OptimismPortal's `depositTransaction` function. In both opt-in and opt-out scenarios,
+   the new fee vault implementations are deployed and the `FeeSplitter` is initialized.
+   When operators opt-out, the `FeeSplitter` is initialized with
+   a zero address for the `SharesCalculator`, effectively disabling the fee
+   splitting functionality while setting up the infrastructure for future usage.
 
-2. `LateOptInRevenueShare` this template allows chain operators to start using the fee splitting mechanism in case they initially opted out of it. It's highly configurable and allows them to quickly set up the infrastructure with their own `SharesCalculator` if needed.
+2. `LateOptInRevenueShare` template allows chain operators to start using the fee splitting mechanism in case they initially opted out of it.
+   Operators can choose to use their own already deployed `SharesCalculator` or use the default implementation provided,
+   whose deployment will be handled by the template. The process consists of properly configuring the vaults to work with the `FeeSplitter`,
+   updating the `FeeSplitter` with the new calculator.
 
 With the introduction of these two templates, operators can deploy and configure the contracts in a way that is less prone to errors than executing one transaction at a time for contract deployments and configuration, and has the advantage of not requiring a Network Upgrade Transaction.
 
