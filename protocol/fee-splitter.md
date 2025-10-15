@@ -90,12 +90,14 @@ We make use of the Superchain-Ops tool, which allows defining tasks that are eas
    the new fee vault implementations are deployed and the `FeeSplitter` is initialized.
    When operators opt-out, the `FeeSplitter` is initialized with
    a zero address for the `SharesCalculator`, effectively disabling the fee
-   splitting functionality while setting up the infrastructure for future usage.
+   splitting functionality while setting up the infrastructure for future usage. On the other hand, when operators opt-in,
+   both `L1Withdrawer` and `SuperchainRevSharesCalculator` are deployed on L2 for the `FeeSplitter` to use.
+   The `L1Withdrawer` will have the `FeesDepositor` address set, and the deployed calculator will be set as the calculator implementation on the `FeeSplitter`.
 
 2. `LateOptInRevenueShare` template allows chain operators to start using the fee splitting mechanism in case they initially opted out of it.
    Operators can choose to use their own already deployed `SharesCalculator` or use the default implementation provided,
-   whose deployment will be handled by the template. The process consists of properly configuring the vaults to work with the `FeeSplitter`,
-   updating the `FeeSplitter` with the new calculator.
+   whose deployment will be handled by the template. The process consists of properly configuring the vaults to work with the `FeeSplitter`
+   and updating the `FeeSplitter` with the new calculator.
 
 With the introduction of these two templates, operators can deploy and configure the contracts in a way that is less prone to errors than executing one transaction at a time for contract deployments and configuration, and has the advantage of not requiring a Network Upgrade Transaction.
 
